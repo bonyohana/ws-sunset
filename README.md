@@ -54,7 +54,7 @@ As a GitHub Action, it reports findings and passes by default:
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: bonyohana/ws-sunset@v0.1.1
+- uses: bonyohana/ws-sunset@v0.1.2
   with:
     path: .
     fail-on-findings: "false"   # set "true" to fail the build once you've migrated
@@ -71,6 +71,11 @@ Or run the command directly:
 These are pattern matches. Expect a few false positives, such as a `qualifiers` field from a
 non-USGS API in the same file. It will also miss URLs built up from fragments at runtime.
 Treat each finding as a place to look, and the official guide as the authority.
+
+`qualifiers-field` is reported once per file, with a count, so recorded responses in test fixtures
+don't bury everything else. A bare `nwis.get_*()` call counts as dataretrieval only when the same
+file imports dataretrieval, because other libraries (ulmo, for one) have their own `nwis` module.
+Those modules usually call WaterServices too, and their URLs are reported where they appear.
 
 ## About
 

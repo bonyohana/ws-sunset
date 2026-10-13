@@ -38,7 +38,10 @@ LEGACY_URL = re.compile(
     re.I)
 ANY_WATERSERVICES = re.compile(r"waterservices\.usgs\.gov", re.I)
 R_READNWIS = re.compile(r"\b(readNWIS\w*|whatNWIS\w*)\s*\(")
-PY_NWIS = re.compile(r"(\bfrom\s+dataretrieval\s+import\s+[^\n]*\bnwis\b|\bimport\s+dataretrieval\.nwis\b|\bdataretrieval\.nwis\b|\bnwis\.(get_\w+|what_\w+)\s*\()")
+PY_NWIS = re.compile(r"(\bfrom\s+dataretrieval\s+import\s+[^\n]*\bnwis\b|\bimport\s+dataretrieval\.nwis\b|\bdataretrieval\.nwis\b)")
+# a bare nwis.get_*() call is dataretrieval's only when the file imports it (ulmo has its own nwis)
+PY_NWIS_CALL = re.compile(r"\bnwis\.(get_\w+|what_\w+)\s*\(")
+PY_DATARETRIEVAL = re.compile(r"\bdataretrieval\b")
 # provisional checks written against the legacy qualifiers list / *_cd columns
 QUAL_P = re.compile(r"""(['"])P\1\s+(?:not\s+)?in\s+[\w.\[\]'"]*qualifiers|qualifiers[\w.\[\]'"]*\s*(?:==|!=|\.includes\(|\.contains\(|%in%)\s*\(?\s*(['"])P\2""")
 # reading the legacy qualifiers field at all (only reported in files that also use WaterServices)
@@ -46,7 +49,7 @@ QUAL_FIELD = re.compile(r"""['"]qualifiers['"]|\.qualifiers\b""")
 CD_COLUMN = re.compile(r"""['"`]?\w*_\d{5}_cd['"`]?""")
 
 EXTS = {".py", ".r", ".rmd", ".qmd", ".ipynb", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".sh", ".rb", ".go",
-        ".java", ".cs", ".php", ".jl", ".m", ".sql", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".md", ".html"}
+        ".java", ".cs", ".php", ".jl", ".m", ".sql", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".md", ".rst", ".html", ".swift", ".kt", ".rs"}
 SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".tox", "renv"}
 
 
@@ -63,6 +66,7 @@ class Finding:
 
 def scan_text(path: str, text: str) -> list[Finding]:
     out: list[Finding] = []
+    uses_dataretrieval = bool(PY_DATARETRIEVAL.search(text))
     for i, line in enumerate(text.splitlines(), 1):
         seen_url = False
         for m in LEGACY_URL.finditer(line):
@@ -76,7 +80,7 @@ def scan_text(path: str, text: str) -> list[Finding]:
             out.append(Finding(path, i, "r-dataRetrieval", m.group(1),
                                "the read_waterdata() family in current dataRetrieval",
                                "readNWIS functions call WaterServices", "https://doi-usgs.github.io/dataRetrieval/"))
-        m = PY_NWIS.search(line)
+        m = PY_NWIS.search(line) or (uses_dataretrieval and PY_NWIS_CALL.search(line))
         if m:
             out.append(Finding(path, i, "py-dataretrieval", m.group(0).strip(),
                                "the dataretrieval.waterdata module",
@@ -93,14 +97,18 @@ def scan_text(path: str, text: str) -> list[Finding]:
                                "approval_status (P/A) plus qualifier (all other codes)",
                                "RDB *_cd columns are split into two fields", GUIDE + "#migrating-from-%2Fiv-to-%2Fcontinuous"))
     if any(f.kind in ("legacy-endpoint", "legacy-host", "r-dataRetrieval", "py-dataretrieval") for f in out):
+        # one finding per file: recorded responses in fixtures would otherwise repeat it thousands of times
         flagged = {f.line for f in out if f.kind == "provisional-check"}
-        for i, line in enumerate(text.splitlines(), 1):
-            m = QUAL_FIELD.search(line)
-            if m and i not in flagged:
-                out.append(Finding(path, i, "qualifiers-field", m.group(0),
-                                   "approval_status (Approved/Provisional) and qualifier (other codes)",
-                                   "the legacy qualifiers list is split in the new API; anything stored or "
-                                   "displayed from it needs both fields", GUIDE + "#migrating-from-%2Fiv-to-%2Fcontinuous"))
+        hits = [(i, m) for i, line in enumerate(text.splitlines(), 1)
+                if (m := QUAL_FIELD.search(line)) and i not in flagged]
+        if hits:
+            i, m = hits[0]
+            more = f"; {len(hits)} lines in this file read it" if len(hits) > 1 else ""
+            out.append(Finding(path, i, "qualifiers-field", m.group(0),
+                               "approval_status (Approved/Provisional) and qualifier (other codes)",
+                               "the legacy qualifiers list is split in the new API; anything stored or "
+                               "displayed from it needs both fields" + more,
+                               GUIDE + "#migrating-from-%2Fiv-to-%2Fcontinuous"))
     out.sort(key=lambda f: f.line)
     return out
 

@@ -41,7 +41,8 @@ class ScanText(unittest.TestCase):
 
     def test_python_nwis_module(self):
         self.assertEqual(kinds("from dataretrieval import nwis"), ["py-dataretrieval"])
-        self.assertEqual(kinds("df, md = nwis.get_iv(sites='01646500')"), ["py-dataretrieval"])
+        self.assertEqual(kinds("from dataretrieval import nwis\ndf, md = nwis.get_iv(sites='01646500')"),
+                         ["py-dataretrieval", "py-dataretrieval"])
         self.assertEqual(kinds("from dataretrieval import waterdata"), [])
 
     def test_legacy_provisional_checks(self):
@@ -54,6 +55,20 @@ class ScanText(unittest.TestCase):
         legacy = 'u = "https://waterservices.usgs.gov/nwis/iv/"\nq = item.get("qualifiers", [])'
         self.assertIn("qualifiers-field", kinds(legacy))
         self.assertNotIn("qualifiers-field", kinds('q = item.get("qualifiers", [])'))
+
+    def test_qualifiers_field_once_per_file(self):
+        # recorded responses in test fixtures repeat "qualifiers" thousands of times
+        text = 'u = "https://waterservices.usgs.gov/nwis/iv/"\n' + '{"qualifiers": ["P"]}\n' * 500
+        f = [x for x in scan_text("fixtures.py", text) if x.kind == "qualifiers-field"]
+        self.assertEqual(len(f), 1)
+        self.assertEqual(f[0].line, 2)
+        self.assertIn("500 lines", f[0].note)
+
+    def test_bare_nwis_call_needs_dataretrieval_in_file(self):
+        # other libraries (ulmo) have their own nwis module
+        self.assertEqual(kinds("from ulmo.usgs import nwis\nnwis.get_sites(state_code='TX')"), [])
+        self.assertEqual(kinds("import dataretrieval.nwis as nwis\nnwis.get_sites(stateCd='TX')"),
+                         ["py-dataretrieval", "py-dataretrieval"])
 
     def test_rdb_cd_column(self):
         self.assertIn("rdb-cd-column", kinds("df['X_00060_cd'] == 'P'"))
