@@ -50,6 +50,18 @@ final", it will treat provisional data as approved. A null `qualifier` doesn't m
 
 ## In CI
 
+As a GitHub Action, it reports findings and passes by default:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: bonyohana/ws-sunset@v0.1.1
+  with:
+    path: .
+    fail-on-findings: "false"   # set "true" to fail the build once you've migrated
+```
+
+Or run the command directly:
+
 ```yaml
 - run: pip install git+https://github.com/bonyohana/ws-sunset && ws-sunset .
 ```

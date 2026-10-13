@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ws-sunset"
-version = "0.1.0"
+version = "0.1.1"
 description = "Find code that breaks when USGS WaterServices is decommissioned (Q1 2027), with the official replacement for each hit"
 readme = "README.md"
 license = {text = "MIT"}

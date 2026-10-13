@@ -1,0 +1,25 @@
+name: ws-sunset
+description: Find code that breaks when USGS WaterServices is decommissioned (Q1 2027)
+branding:
+  icon: droplet
+  color: blue
+inputs:
+  path:
+    description: Path to scan
+    default: "."
+  fail-on-findings:
+    description: Fail the step when anything is found ("true"/"false")
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set +e
+        python3 "$GITHUB_ACTION_PATH/ws_sunset/scan.py" "$WS_PATH"
+        rc=$?
+        if [ "$rc" -ne 0 ] && [ "$WS_FAIL" = "true" ]; then exit "$rc"; fi
+        exit 0
+      env:
+        WS_PATH: ${{ inputs.path }}
+        WS_FAIL: ${{ inputs.fail-on-findings }}
