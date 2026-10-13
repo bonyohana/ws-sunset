@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ws-sunset"
+version = "0.1.0"
+description = "Find code that breaks when USGS WaterServices is decommissioned (Q1 2027), with the official replacement for each hit"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [{name = "Clara"}]
+
+[project.scripts]
+ws-sunset = "ws_sunset.scan:main"
+
+[tool.setuptools]
+packages = ["ws_sunset"]
