@@ -1,8 +1,21 @@
 # ws-sunset
 
-USGS is decommissioning **WaterServices** (`waterservices.usgs.gov`) in the first quarter of 2027.
-Before then, USGS may intentionally degrade the service or schedule blackouts
-([USGS notice](https://waterdata.usgs.gov/blog/api-waterservices-decom/)). Any code that calls it, or that uses
+USGS is decommissioning **WaterServices** (`waterservices.usgs.gov`) on **22 February 2027**. Before that, USGS
+is degrading it on purpose so that automated users notice
+([schedule](https://waterdata.usgs.gov/blog/wdfn-waterservices-degradation/), updated 27 Oct 2026):
+
+| Date | What happens to every WaterServices request |
+|---|---|
+| 16 Nov 2026 | 2-second added delay |
+| 11 Jan 2027 | 10-second delay |
+| 25 Jan 2027 | 30-second delay |
+| 27 Jan 2027 | redirected to the USGS notice for about 24 hours (restored 28 Jan) |
+| 1 Feb 2027 | 60-second delay |
+| 15 Feb 2027 | redirected for about 48 hours (restored 17 Feb) |
+| 22 Feb 2027 | decommissioned |
+
+Code that polls many sites one request at a time will feel the delays first. See also the
+[decommission notice](https://waterdata.usgs.gov/blog/api-waterservices-decom/). Any code that calls it, or that uses
 R `readNWIS*()` or the Python `dataretrieval.nwis` module, needs to move to the modernized
 [Water Data APIs](https://api.waterdata.usgs.gov/ogcapi/v1/).
 
