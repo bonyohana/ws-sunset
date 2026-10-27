@@ -14,7 +14,7 @@ is degrading it on purpose so that automated users notice
 | 15 Feb 2027 | redirected for about 48 hours (restored 17 Feb) |
 | 22 Feb 2027 | decommissioned |
 
-Code that polls many sites one request at a time will feel the delays first. See also the
+Code that polls many sites one request at a time may feel the delays first, depending on its concurrency and timeouts. See also the
 [decommission notice](https://waterdata.usgs.gov/blog/api-waterservices-decom/). Any code that calls it, or that uses
 R `readNWIS*()` or the Python `dataretrieval.nwis` module, needs to move to the modernized
 [Water Data APIs](https://api.waterdata.usgs.gov/ogcapi/v1/).
